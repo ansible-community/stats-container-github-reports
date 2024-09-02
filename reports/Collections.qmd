@@ -1,0 +1,22 @@
+---
+#title: "GitHub Contributor Metrics - `r params$section`"
+title: GitHub Contributor Metrics - Collections GitHub Org
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute: 
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk: 
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+params:
+  section: "Collections"
+description: GitHub report for the Collections GitHub Organisation
+---
+
+{{< include _main_report.qmd >}}
+

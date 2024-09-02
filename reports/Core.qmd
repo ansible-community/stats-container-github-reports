@@ -1,0 +1,21 @@
+---
+title: GitHub Contributor Metrics - Core Repo
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute: 
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk: 
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+params:
+  section: "Core"
+description: GitHub report for the Core `ansible/ansible` repository
+---
+
+{{< include _main_report.qmd >}}
+

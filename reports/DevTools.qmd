@@ -1,0 +1,21 @@
+---
+title: GitHub Contributor Metrics - DevTools Repos
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute: 
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk: 
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+params:
+  section: "DevTools"
+description: GitHub report for the DevTools repos from the Ansible ecosystem
+---
+
+{{< include _main_report.qmd >}}
+

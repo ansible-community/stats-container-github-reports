@@ -1,0 +1,21 @@
+---
+title: GitHub Contributor Metrics - Community GitHub Org
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute: 
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk: 
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+params:
+  section: "Community"
+description: GitHub report for the Community GitHub Organisation
+---
+
+{{< include _main_report.qmd >}}
+
