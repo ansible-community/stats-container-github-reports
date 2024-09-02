@@ -1,4 +1,5 @@
 #!/usr/bin/bash
 
-quarto render
-cp -Tr github/ output/
+quarto render && \
+	rm -rf output/* && \
+	cp -Tr github/ output/
