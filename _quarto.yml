@@ -1,0 +1,29 @@
+project:
+  type: website
+  render:
+    - "index.qmd"
+    - "reports/*qmd"
+  resources:
+    - "files/*"
+  output-dir: github
+
+website:
+  title: "GitHubReports"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+    right:
+      - href: https://github.com/ansible-community/stats-container-github-reports
+        text: GitHub
+        icon: github
+
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+
+

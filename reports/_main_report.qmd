@@ -1,0 +1,303 @@
+```{r}
+#| label: setup-libaries
+#| include: FALSE
+
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(ggrepel)
+library(patchwork)
+```
+
+```{r}
+#| label: config-loading
+
+board <- pins::board_folder('/srv/docker-pins/github/repos')
+repo_pins <- pins::pin_list(board) |>
+  enframe(name=NULL,value="pin") |>
+  mutate(org  = map_chr(pin, str_split_i, pattern = "\\|", i =1),
+         repo = map_chr(pin, str_split_i, pattern = "\\|", i =2))
+
+scores <- config::get(file = '/srv/docker-config/github/scores.yml',
+                      value = 'scores')
+
+staff <- readr::read_csv('/srv/docker-config/github/staff-list.csv')
+```
+
+```{r}
+#| label: data-loading
+
+# Subset the data
+pins_load <- switch(params$section,
+       All = repo_pins,
+       AWX = repo_pins |>
+         filter(org == 'ansible' & repo %in% c(
+           'awx',
+           'awx-operator',
+           'awx-ee',
+           'awx-resource-operator',
+           'receptor',
+           'receptor-collection')
+         ),
+       Collections = repo_pins |> filter(org == 'ansible-collections'),
+       Community =  repo_pins |> filter(org == 'ansible-community'),
+       Core = repo_pins |> filter(org == 'ansible' & repo == 'ansible'),
+       DevTools = repo_pins |> 
+         filter(
+         (org == 'ansible-community' & repo %in% c(
+           'molecule',
+           'molecule-plugins',
+           'protogen',
+           'role2collection',
+           'sphinx_ansible_theme')) |
+         (org == 'ansible' & repo %in% c(
+           'ansible-compat',
+           'ansible-language-server',
+           'ansible-lint',
+           'ansible-lint-action',
+           'ansible-navigator',
+           'creator-ee',
+           'devtools',
+           'vscode-ansible')))
+)
+
+all_data <- tibble()
+for (repo in pins_load$pin) {
+  all_data <- rbind(
+    all_data,
+    pins::pin_read(board, repo) |> dplyr::mutate(createdAt = ymd_hms(createdAt))
+  )
+}
+raw_data <- all_data # TODO Legacy handler
+```
+
+This report covers the **contributors** to the Ansible community **on GitHub**.
+For contributors in other places, or other types of report, see the rest of the
+series (link TBD)
+
+## Dataset
+
+The section "`r params$section`" was requested. The data comprises all Issues,
+PRs (including the comments) from `r raw_data |> count(repo) |> nrow()` GitHub
+repositories over `r raw_data |> count(org) |> nrow()` GitHub Organisations.
+Please contact us if you'd like to see this report for a different subset of the
+repos.
+
+## Active contributors
+
+This plot uses the [Orbit-Love model](https://orbitmodel.com/love) to count
+activity, and includes any person who has a minimum threshold of activity. See
+the Processing Notes appendix for details on the calculations.
+
+```{r}
+#| label: script-orbit-gh
+source('../scripts/orbit-love-github.R', local=TRUE)
+```
+
+```{r}
+#| label: threshold-contributors
+
+gh_love |>
+  mutate(contributors = map_int(data, ~{
+    .x |> filter(total_score >= 10) |> nrow()})) |>
+    slice_tail(n=12) -> df
+
+df |>
+  ggplot(aes(end, contributors)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(limits = c(0,NA)) +
+  annotate("label", x = df[1,2]$end, y = df[1,4]$contributors,
+           label = df[1,4]$contributors, vjust = 1.2) +
+  annotate("label", x = df[12,2]$end, y = df[12,4]$contributors,
+           label = df[12,4]$contributors, vjust = 1.2) +
+  theme_minimal() +
+  labs(title = "Active Ansible Contributors over the 12 months - DevTools",
+       subtitle = "Number of contributors with total_score > 10",
+       caption = "https://orbitmodel.com/love",
+       x = "Date", y = "Contributors") -> plot_ncontrib
+```
+
+```{r}
+#| label: polar-top20
+
+gh_love |>
+  mutate(contributors = map(data, ~{
+    .x |> slice_head(n=20) })) |>
+  unnest(contributors) |>
+  group_by(author) |>
+  arrange(end) |>
+  filter(!is.na(total_score)) |>
+  nest(data = -author) |>
+  mutate(lm = map(data, ~{lm(end ~ total_score, data = .x)}),
+         slope = map_dbl(lm, ~{ coefficients(.x)[2] })) |>
+  unnest(data) |>
+  filter(index == 0) |>
+  select(author, end, n, total_score, slope) -> df
+
+df$slope <- scale(df$slope)
+df$x1 <- df$total_score + (df$total_score*df$slope)*.1
+
+range(df$n) ->           n_range
+range(df$total_score, df$x1) -> score_range
+
+df |>
+  ggplot(aes(author, total_score)) +
+  geom_point(aes(fill = n, size = n), colour = 'black', alpha = 0.7, pch = 21) +
+  coord_polar() +
+  scale_x_discrete(labels = NULL) +
+  scale_y_continuous(limits = rev(score_range),
+                     trans = scales::reciprocal_trans()
+                     ) +
+  scale_size_continuous(name = 'Items',
+                        limits = rev(n_range),
+                        trans = scales::reciprocal_trans()
+  ) +
+  scale_fill_gradient2(name = "Items", trans = scales::log10_trans(),
+                         low='blue',high='red',mid = 'yellow',
+                         midpoint=median(log10(df$total_score)),
+  ) +
+  geom_segment(aes(xend = author, yend = x1),
+               data = na.omit(df), 
+               arrow = arrow(type = 'closed', length = unit(.01, 'npc'))) +
+  geom_label_repel(aes(label=author), vjust = 0.5) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  labs(title = "Top Ansible Contributors",
+       subtitle = "20 highest GH contributors by total_score",
+       caption = "https://orbitmodel.com/love",
+       x = "Date", y = "Total Score") -> plot_top20
+
+ggsave(str_glue('{params$section}_top20.png'),
+       plot_top20, width = 20, height = 20, units = 'cm')
+```
+
+```{r}
+#| label: draw-plot1
+
+print(plot_ncontrib,cache=F)
+```
+
+## Top Contributors Orbit plot
+```{r}
+#| label: draw-plot2
+
+knitr::include_graphics(str_glue('{params$section}_top20.png'))
+```
+
+```{r}
+#| label: top20-table
+
+df |>
+  select(author, total_score, slope) |>
+  mutate(across(c(total_score, slope), round, 1)) |>
+  arrange(-slope) |>
+  knitr::kable()
+```
+
+## Contributor Retention
+
+This plot uses the concept of "Weekly Active Users" and "Half-Year Active Users"
+to express a ratio (WAU / 2QAU). The higher this ratio, the better we are doing
+at retaining people:
+
+```{r}
+#| label: script-daumau
+source('../scripts/dau_mau-github.R', local=TRUE)
+```
+
+```{r}
+#| label: plot-daumau
+
+wau_2qau |>
+  ggplot(aes(week, dm)) +
+  geom_point() +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(0,NA),
+                     n.breaks = 7) +
+  scale_x_datetime(date_breaks = '1 month', date_labels = "%b") +
+  theme_minimal() +
+  labs(title = "Weekly Active Users / Half-year Active Users",
+       subtitle = "All GitHub contribuors considered",
+       x = "Date", y = "WAU / 2QAU")
+```
+
+- TODO - can cohort analysis help?
+- TODO - some survival analysis of churn here?
+
+## Responsiveness of users
+
+We'd lie to know two things - how quickly we respond to Issues & PRs, and how
+quickly we get them closed
+
+```{r}
+#| label: script-survival
+source('../scripts/survival-github.R', local=TRUE)
+```
+
+```{r surv_table}
+#| label: survival-plots
+sfit <- survfit(Surv(time, state) ~ type, data = surv_gh)
+
+ggsurvplot(
+  sfit, conf.int = T, data = surv_gh, fun = 'event',
+  break.x.by = 20, xlim = c(0,180),
+  surv.scale = 'percent', risk.table = 'absolute',
+  surv.median.line = "hv") -> g1
+
+g1_plot <- g1$plot +
+  theme_tq() +
+  scale_fill_tq() +
+  scale_color_tq() +
+  labs(title = 'Time-to-close: Issues & PRs',
+       y = 'Chance of still being open')
+
+g1_table <- g1$table +
+  theme_tq() +
+  scale_fill_tq() +
+  scale_color_tq() +
+  theme(panel.grid = element_blank())
+
+g1_table$labels$title <- 'Percentage still open'
+
+g1_plot / g1_table + plot_layout(heights = c(2,1))
+```
+
+```{r surv_facets}
+#| label: survival-facets
+ggsurvplot_facet(
+  sfit, conf.int = T, data = surv_gh, fun = 'event',
+  break.x.by = 20, xlim = c(0,180),
+  #panel.labs = list(staff = c('Community', 'Staff')),
+  #risk.table = T,
+  surv.scale = 'percent', surv_median.line = 'hv',
+  facet.by = 'staff', nrow = 1) -> g2
+
+g2 +
+  theme_tq() +
+  scale_fill_tq() +
+  scale_color_tq() +
+  labs(title = 'Time-to-close, by author type')
+```
+
+## Processing Notes
+
+The Orbit-Love Scores are:
+  - Issues = 1
+  - PRs = 1.4
+  - Issue Comments = 1.4
+  - PR Comments = 1.6
+  - Self-comments = 0.2 (multiplier)
+  - Monthly Decay = 0.9
+  - Hard-cap timeout = 365 days
+
+The Survival curves count any Issue/PR closed in the last 6 months, or still
+open at the time of calculation
+
+## Contact
+
+This report was prepared by Greg Sutcliffe, please contact me if you have
+questions.
+

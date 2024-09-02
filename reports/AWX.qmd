@@ -1,0 +1,22 @@
+---
+#title: "GitHub Contributor Metrics - `r params$section`"
+title: GitHub Contributor Metrics - AWX Repos
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute: 
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk: 
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+params:
+  section: "AWX"
+description: GitHub report for the AWX repos from the Ansible ecosystem
+---
+
+{{< include _main_report.qmd >}}
+

@@ -1,0 +1,32 @@
+---
+title: "GitHub Ecosystem Reports"
+listing:
+  contents:
+    - "reports/*.qmd"
+  image-placeholder: files/octocat.png
+
+---
+
+```{r}
+#| echo: false
+
+# # render the reports
+# library(quarto)
+# library(tidyverse)
+# 
+# types <- config::get(file = '/srv/docker-config/github/repos.yml',
+#                       config = 'report', value = 'types')
+# 
+# fs::dir_create('reports')
+# setwd('reports')
+# reports <- tibble(
+#   input = "../main_report.qmd",
+#   output_file = stringr::str_glue("report_{types}.html"),
+#   execute_params = map(types, ~ list(section = .))
+# )
+# 
+# pwalk(reports, quarto_render)
+# setwd('..')
+```
+
+**This is where to find the Ansible Ecosystem GitHub Reports. See links below:**

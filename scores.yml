@@ -1,0 +1,10 @@
+default:
+  scores:
+    pr: 1.4
+    prcomment: 1.6
+    issue: 1.0
+    issuecomment: 1.4
+    selfcomment: 0.2
+    decay: 0.9
+    timeout: 365
+
