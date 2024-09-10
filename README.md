@@ -15,6 +15,7 @@ Inside the container it should look like this:
 ```
 /srv/docker-config
 └── github
+    ├── email.yml
     ├── scores.yml
     └── staff-list.csv
 /srv/docker-pins
@@ -28,7 +29,8 @@ Inside the container it should look like this:
 You can look at the examples in this repo for details
 
 You'll need:
-- A `scores.yaml` to assign weights
+- A `email.yml` to send the email report
+- A `scores.yml` to assign weights
 - A `staff-list.csv` which contains a `GitHub Login` column
 
 ## Build the container
@@ -65,3 +67,19 @@ podman run --rm -ti \
 ```
 
 This will output the rendered site to the mounted `output` directory.
+
+### Send summary email
+
+This depends on the site being generated as above - it merely grabs the
+`All_top20.png` from the site and sends it with a short summary.
+
+```
+podman run --rm -ti \
+  -v /srv/docker-config/github/:/srv/docker-config/github \
+  -v /srv/docker-pins/github:/srv/docker-pins/github \
+  -v /srv/docker-reports/github:/opt/ghreports/output \
+  github-reports:latest \
+  ./send_email.R
+```
+
+This depends on the email.yml config as above.

@@ -1,0 +1,30 @@
+---
+title: GitHub Contributor Metrics - All Repos
+subtitle: Community Reports Series
+author: Greg Sutcliffe
+date: today
+format: html
+execute:
+  echo: FALSE
+  cache: FALSE
+knitr:
+  opts_chunk:
+    message: FALSE
+    warning: FALSE
+    fig-width: 10
+description: GitHub report for the all repos from the Ansible ecosystem
+---
+
+<!-- This file assumes the main report job has run, and emails the -->
+<!-- top20.png file as a summary of the report -->
+
+The GitHub reports have been regenerated and can be found [on the stats
+site](https://connect.eng.ansible.com/github). Below is the Top20 Orbit plot for
+this week.
+
+```{r}
+#| label: email-plot
+knitr::include_graphics('../github/reports/All_top20.png')
+```
+
+

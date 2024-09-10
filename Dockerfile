@@ -16,5 +16,6 @@ COPY ./reports reports
 COPY ./files files
 
 COPY ./make-site.sh .
+COPY ./send_email.R .
 
 CMD ["/bin/bash"]

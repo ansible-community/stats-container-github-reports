@@ -57,4 +57,5 @@ github/
 # Ignore symlink dirs
 /config/
 /pins/
-/github-py/
+
+/.quarto/
