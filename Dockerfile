@@ -1,7 +1,7 @@
 FROM rocker/tidyverse:latest
 
 RUN install2.r config emayili pins ggrepel patchwork \
-               janitor tidyquant survminer \
+               janitor tidyquant survminer quarto \
     && rm -rf /tmp/downloaded_packages
 
 RUN mkdir -p /opt/ghreports
