@@ -73,13 +73,15 @@ This will output the rendered site to the mounted `output` directory.
 This depends on the site being generated as above - it merely grabs the
 `All_top20.png` from the site and sends it with a short summary.
 
+Note the mount point for the 3rd folder is `github` not `output` this time - the existing site needs to be mounted in place
+
 ```
 podman run --rm -ti \
   -v /srv/docker-config/github/:/srv/docker-config/github \
   -v /srv/docker-pins/github:/srv/docker-pins/github \
-  -v /srv/docker-reports/github:/opt/ghreports/output \
+  -v /srv/docker-reports/github:/opt/ghreports/github \
   github-reports:latest \
-  ./send_email.R
+  Rscript ./send_email.R
 ```
 
 This depends on the email.yml config as above.
